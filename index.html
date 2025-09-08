@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Sosyal Medya Güvenliği Anketi</title>
+  <style>
+    :root{ --bg:#f7f7fb; --card:#fff; --text:#1f2937; --muted:#6b7280; --primary:#6366f1; --border:#e5e7eb; --ok:#10b981; --warn:#f59e0b; --danger:#ef4444; }
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);} 
+    .container{max-width:960px;margin:0 auto;padding:24px}
+    .hero{background:linear-gradient(90deg,#7c3aed,#6366f1);color:#fff;border-radius:18px;padding:28px 24px;margin-bottom:20px}
+    h1{margin:0 0 6px;font-size:34px}
+    .muted{color:var(--muted)}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;margin:14px 0;box-shadow:0 8px 20px rgba(0,0,0,.05)}
+    .qtitle{font-weight:600;margin-bottom:8px}
+    .opt{display:block;padding:10px 12px;border-radius:10px;border:1px solid var(--border);margin:8px 0;cursor:pointer}
+    .opt input{margin-right:8px}
+    .opt:hover{background:#fafafa}
+    .btn{display:inline-block;background:var(--primary);color:#fff;border:none;border-radius:12px;padding:12px 16px;font-weight:600;cursor:pointer}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .pill{display:inline-block;border:1px solid var(--border);padding:6px 10px;border-radius:999px;background:#fafafa}
+    progress{width:100%;height:14px}
+    .badge{display:inline-block;border:1px solid var(--border);padding:6px 10px;border-radius:999px;background:#fafafa;margin-right:6px}
+    .range{display:flex;gap:8px;flex-wrap:wrap}
+    .range .badge.ok{border-color:#d1fae5;background:#ecfdf5;color:#065f46}
+    .range .badge.warn{border-color:#fef3c7;background:#fffbeb;color:#7c2d12}
+    .range .badge.danger{border-color:#fee2e2;background:#fef2f2;color:#7f1d1d}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>🛡️ Sosyal Medya Güvenliği Anketi</h1>
+      <div style="opacity:.95">Sosyal medya kullanım alışkanlıklarını değerlendir. Puanlamalar etkinlik sonunda kaydedilir.</div>
+    </div>
+
+    <div id="quiz"></div>
+
+    <div class="card">
+      <div class="row">
+        <button id="submitBtn" class="btn">Puanımı Göster</button>
+        <span class="pill" id="answeredInfo">0/0 madde işaretlendi</span>
+      </div>
+      <div id="result" style="margin-top:14px;display:none">
+        <h3>Sonuç</h3>
+        <div class="row"><strong>Toplam Puan:</strong> <span id="score"></span></div>
+        <div class="row"><strong>Yüzdelik:</strong> <span id="percent"></span></div>
+        <div class="row"><strong>Kategori:</strong> <span id="category"></span></div>
+        <progress id="bar" value="0" max="100"></progress>
+        <div class="row"><strong>Sınıf Ortalaması (bu cihaz):</strong> <span id="localAvg">—</span></div>
+        <div class="row" id="remoteWrap" style="display:none">
+          <strong>Sınıf Ortalama Yüzdelik (tüm cihazlar):</strong> <span id="remoteAvg">—</span>
+        </div>
+        <div class="row" id="remoteWrapScore" style="display:none">
+          <strong>Sınıf Ortalama Puan (tüm cihazlar):</strong> <span id="remoteAvgScore">—</span>
+        </div>
+      </div>
+      <div class="muted" style="margin-top:8px">Not: “Bu cihaz” ortalaması, aynı cihazda bu sayfa ile yapılan tüm denemelerin ortalamasıdır. Tüm cihazlarda ortak ortalama için Google Sheets + Apps Script entegrasyonu kullanılır.</div>
+    </div>
+  </div>
+
+<script>
+const STATEMENTS = [
+  "İnsanlara saygılı davranıyorum.",
+  "Paylaşımlarıma kimlerin erişebileceğini düzenli olarak denetliyorum.",
+  "Kişisel verilerimi paylaşmıyorum.",
+  "Güvenlik ayarlarımı aktif tutarım.",
+  "Rahatsız olduğumda engelleme/şikâyet mekanizmasını kullanırım.",
+  "Güçlü şifre kullanır ve gizli tutarım.",
+  "Tanımadığım kişilerin isteklerini kabul etmem.",
+  "Aileme/öğretmenime sorun yaşadığımda haber veririm.",
+  "Hesap iletişim bilgilerimi güncel tutarım.",
+  "Kötü niyetli kişilerin varlığının farkındayım."
+];
+
+const REMOTE_ENDPOINT = "https://script.google.com/macros/s/AKfycbzUZ_VghmnesYLlsTLrp18R1IzUhgR1BHBYfqTddQy6CN1H70jNEKHAkn2u_MVVat1F/exec"; 
+
+const quizEl = document.getElementById("quiz");
+const submitBtn = document.getElementById("submitBtn");
+const answeredInfo = document.getElementById("answeredInfo");
+const resultBox = document.getElementById("result");
+const scoreEl = document.getElementById("score");
+const percentEl = document.getElementById("percent");
+const barEl = document.getElementById("bar");
+const localAvgEl = document.getElementById("localAvg");
+const remoteWrap = document.getElementById("remoteWrap");
+const remoteAvgEl = document.getElementById("remoteAvg");
+const remoteWrapScore = document.getElementById("remoteWrapScore");
+const remoteAvgScoreEl = document.getElementById("remoteAvgScore");
+
+const OPTIONS = [
+  { label: "Evet, her zaman", value: 0 },
+  { label: "Bazen", value: 1 },
+  { label: "Hayır", value: 2 },
+];
+
+function render(){
+  quizEl.innerHTML = "";
+  STATEMENTS.forEach((text, idx) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    const q = document.createElement("div");
+    q.className = "qtitle";
+    q.textContent = `${idx+1}. ${text}`;
+    card.appendChild(q);
+
+    OPTIONS.forEach(opt=>{
+      const id = `q${idx}_${opt.value}`;
+      const label = document.createElement("label");
+      label.className = "opt";
+      label.setAttribute("for", id);
+      label.innerHTML = `<input type="radio" name="q${idx}" id="${id}" value="${opt.value}"> ${opt.label}`;
+      card.appendChild(label);
+    });
+
+    quizEl.appendChild(card);
+  });
+  updateAnsweredInfo();
+}
+
+function getAnswers(){
+  const answers = [];
+  for(let i=0;i<STATEMENTS.length;i++){
+    const sel = document.querySelector(`input[name="q${i}"]:checked`);
+    answers.push(sel ? Number(sel.value) : null);
+  }
+  return answers;
+}
+
+function updateAnsweredInfo(){
+  const a = getAnswers();
+  const answered = a.filter(v=>v!==null).length;
+  answeredInfo.textContent = `${answered}/${STATEMENTS.length} madde işaretlendi`;
+  submitBtn.disabled = answered !== STATEMENTS.length;
+}
+
+document.addEventListener("change", (e)=>{
+  if(e.target && e.target.name && e.target.name.startsWith("q")){
+    updateAnsweredInfo();
+  }
+});
+
+function saveLocal(score, max){
+  const key = "smg_results";
+  const arr = JSON.parse(localStorage.getItem(key) || "[]");
+  arr.push({ score, max, t: Date.now() });
+  localStorage.setItem(key, JSON.stringify(arr));
+  const avg = arr.reduce((s,r)=>s + (r.score/r.max*100), 0) / arr.length;
+  return avg; // %
+}
+
+async function postRemote(score, max){
+  if(!REMOTE_ENDPOINT) return null;
+  try{
+    await fetch(REMOTE_ENDPOINT, { method:"POST", body: JSON.stringify({score, max}) });
+    const r = await fetch(REMOTE_ENDPOINT);
+    const j = await r.json();
+    return j;
+  }catch(_){ return null; }
+}
+
+function categorize(score){
+  if(score <= 6) return {label:"Normal Kullanım", cls:"ok"};
+  if(score <= 13) return {label:"Düşük Riskli Kullanım", cls:"warn"};
+  return {label:"Yüksek Riskli Kullanım", cls:"danger"};
+}
+
+submitBtn.addEventListener("click", async ()=>{
+  const vals = getAnswers();
+  if(vals.some(v=>v===null)){ alert("Lütfen tüm maddeleri işaretleyin."); return; }
+
+  const max = STATEMENTS.length * 2;
+  const score = vals.reduce((s,v)=>s+v,0);
+  const pct = (score / max * 100);
+
+  const localAvg = saveLocal(score, max);
+
+  const remoteData = await postRemote(score, max);
+
+  const cat = categorize(score);
+
+  scoreEl.textContent = `${score} / ${max}`;
+  percentEl.textContent = `${pct.toFixed(1)}%`;
+  const catEl = document.getElementById("category");
+  catEl.textContent = cat.label;
+  catEl.className = `badge ${cat.cls}`;
+  barEl.value = pct;
+  localAvgEl.textContent = `${localAvg.toFixed(1)}%`;
+
+  if(remoteData && typeof remoteData.avg === "number"){
+    remoteWrap.style.display = "flex";
+    remoteAvgEl.textContent = `${remoteData.avg.toFixed(1)}%`;
+  }
+  if(remoteData && typeof remoteData.avgScore === "number"){
+    remoteWrapScore.style.display = "flex";
+    remoteAvgScoreEl.textContent = `${remoteData.avgScore.toFixed(1)} / ${max}`;
+  }
+
+  resultBox.style.display = "block";
+});
+
+render();
+</script>
+</body>
+</html>
