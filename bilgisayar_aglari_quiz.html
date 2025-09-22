@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bilgisayar Ağları Mini Quiz</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f8ff;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      color: #b30000;
+    }
+
+    .kelime-alani {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 20px;
+      gap: 10px;
+    }
+
+    .kelime {
+      background-color: #ffc107;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: grab;
+      font-weight: bold;
+      user-select: none;
+    }
+
+    .kelime.used {
+      text-decoration: line-through;
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .soru {
+      background: white;
+      border-left: 5px solid #1e88e5;
+      padding: 15px;
+      margin: 10px auto;
+      max-width: 800px;
+      border-radius: 5px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      line-height: 1.6;
+    }
+
+    .dropzone {
+      display: inline-block;
+      min-width: 200px;
+      min-height: 30px;
+      border: 2px dashed #aaa;
+      margin-left: 10px;
+      padding: 3px 5px;
+      vertical-align: middle;
+      background: #fdfdfd;
+      border-radius: 4px;
+    }
+
+    #puan {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      font-size: 20px;
+      background: #1e88e5;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    @media screen and (max-width: 768px) {
+      .kelime-alani {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Bilgisayar Ağları Mini Quiz</h1>
+
+  <div id="puan">Puan: 0</div>
+
+  <div class="kelime-alani" id="kelimeler"></div>
+
+  <div id="sorular"></div>
+
+  <script>
+    const kelimeListesi = [
+      "bilgisayar ağı",
+      "okul-hastane-banka",
+      "müzik-resim-video",
+      "ağ yazıcısı",
+      "yerel alan ağı (LAN)",
+      "geniş alan ağı (WAN)",
+      "intranet",
+      "ağ kartı",
+      "ağ kablosu",
+      "yönlendirici (router)",
+      "dağıtıcı (switch)",
+      "internet tarayıcı (web browser)",
+      "modem",
+      "Wi-Fi"
+    ];
+
+    const sorular = [
+      "1. Ağ tarayıcısı da denen kullanıcıların ağ sunucuları üzerinde yer alan HTML veya daha gelişmiş sayfaların açılmasını sağlayan, genel ağa dosya yükleme ve ağdan dosya indirme gibi işlemlere olanak tanıyan yazılıma <span class='dropzone' data-cevap='internet tarayıcı (web browser)'></span> denir.",
+      "2. Sadece belirli bir kuruluş içindeki bilgisayarları, yerel ağları (LAN) ve geniş alan ağlarını (WAN) birbirine bağlayan, çoğunlukla TCP/IP tabanlı ağlara <span class='dropzone' data-cevap='intranet'></span> denir.",
+      "3. İki ya da daha fazla bilgisayarın bilgi paylaşımı veya iletişimi için bağlanmasıyla oluşan yapıya <span class='dropzone' data-cevap='bilgisayar ağı'></span> denir.",
+      "4. Bilgisayar ağları <span class='dropzone' data-cevap='okul-hastane-banka'></span> gibi yerlerde kullanılır.",
+      "5. Bilgisayar ağlarında <span class='dropzone' data-cevap='müzik-resim-video'></span> gibi farklı türlerde dosyaları paylaşabiliriz.",
+      "6. Bilgisayar ağlarında tek bir <span class='dropzone' data-cevap='ağ yazıcısı'></span> kurarak maliyeti azaltabiliriz.",
+      "7. Birbirine yakın mesafedeki; aynı binada veya aynı oda içerisinde bulunan bilgisayarların bağlanmasıyla oluşturulan ağlara <span class='dropzone' data-cevap='yerel alan ağı (LAN)'></span> denir.",
+      "8. Aynı ağ iletişim kurallarını kullanan iki bilgisayar ağı arasında veri çerçevelerinin iletimini sağlayan ağ donanım birimine <span class='dropzone' data-cevap='yönlendirici (router)'></span> denir.",
+      "9. Birden fazla bilgisayarın ya da cihazın birbirine bağlanmasını ya da iletişim kurmasını sağlayan fiziksel veya mantıksal büyük ağlara <span class='dropzone' data-cevap='geniş alan ağı (WAN)'></span> denir.",
+      "10. Bir bilgisayarın ağ üzerindeki diğer araçlarla veri alışverişini sağlayan iç donanım birimine <span class='dropzone' data-cevap='ağ kartı'></span> denir.",
+      "11. Ağ kartından çıkan veri <span class='dropzone' data-cevap='ağ kablosu'></span> yolu ile modeme ulaştırılır.",
+      "12. Bilgisayarların ve diğer ağ birimlerinin birbirlerine bağlanmasına olanak sağlayan ağ donanım birimine <span class='dropzone' data-cevap='dağıtıcı (switch)'></span> denir.",
+      "13. Bilgisayarların telefon hattı üzerinden internete bağlanmasını sağlayan elektronik cihaza <span class='dropzone' data-cevap='modem'></span> denir.",
+      "14. Kişisel bilgisayar, video oyunu konsolları, akıllı telefonlar gibi cihazların kablosuz olarak internete bağlanmasını sağlayan teknolojiye <span class='dropzone' data-cevap='Wi-Fi'></span> denir."
+    ];
+
+    let puan = 0;
+    const attempts = {};
+
+    function kelimeleriYukle() {
+      const kelimelerDiv = document.getElementById("kelimeler");
+      const karisik = [...kelimeListesi].sort(() => Math.random() - 0.5);
+      karisik.forEach(kelime => {
+        const span = document.createElement("span");
+        span.className = "kelime";
+        span.draggable = true;
+        span.textContent = kelime;
+        span.id = "kelime-" + kelime;
+        span.addEventListener("dragstart", e => {
+          e.dataTransfer.setData("text/plain", kelime);
+        });
+        kelimelerDiv.appendChild(span);
+      });
+    }
+
+    function sorulariYukle() {
+      const sorularDiv = document.getElementById("sorular");
+      sorular.forEach(metin => {
+        const div = document.createElement("div");
+        div.className = "soru";
+        div.innerHTML = metin;
+        sorularDiv.appendChild(div);
+      });
+
+      document.querySelectorAll(".dropzone").forEach(zone => {
+        zone.addEventListener("dragover", e => e.preventDefault());
+        zone.addEventListener("drop", e => {
+          e.preventDefault();
+          const kelime = e.dataTransfer.getData("text/plain");
+          const cevap = zone.dataset.cevap;
+
+          if (!attempts[zone.dataset.cevap]) attempts[zone.dataset.cevap] = 0;
+          attempts[zone.dataset.cevap]++;
+
+          if (kelime === cevap) {
+            zone.textContent = kelime;
+            zone.style.backgroundColor = "#c8e6c9";
+            document.getElementById("kelime-" + kelime).classList.add("used");
+            const deneme = attempts[zone.dataset.cevap];
+            puan += deneme === 1 ? 10 : deneme === 2 ? 8 : deneme === 3 ? 7 : deneme === 4 ? 6 : deneme === 5 ? 5 : 3;
+            document.getElementById("puan").textContent = `Puan: ${puan}`;
+          } else {
+            zone.style.backgroundColor = "#ffcdd2";
+            setTimeout(() => {
+              zone.style.backgroundColor = "#fdfdfd";
+            }, 800);
+          }
+        });
+      });
+    }
+
+    kelimeleriYukle();
+    sorulariYukle();
+  </script>
+</body>
+</html>
